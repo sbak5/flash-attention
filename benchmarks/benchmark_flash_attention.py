@@ -5,7 +5,6 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from einops import rearrange, repeat
 
 from flash_attn.utils.benchmark import benchmark_all, benchmark_forward, benchmark_backward
@@ -71,15 +70,15 @@ repeats = 30
 device = 'cuda'
 dtype = torch.float16
 
-bs_seqlen_vals = [(32, 512), (16, 1024), (8, 2048), (4, 4096), (2, 8192), (1, 16384)]
-causal_vals = [False, True]
+bs_seqlen_vals = [(8, 2048), (1, 16384)] #[(32, 512), (16, 1024), (8, 2048), (4, 4096), (2, 8192), (1, 16384)]
+causal_vals = [True] #[False, True]
 headdim_vals = [64, 128]
 dim = 2048
 dropout_p = 0.0
 
-methods = (["Flash2", "Pytorch"]
-           + (["Triton"] if attention_triton is not None else [])
-           + (["xformers"] if xops is not None else []))
+methods = (["Flash2"]) #, "Pytorch"])
+#           + (["Triton"] if attention_triton is not None else [])
+#           + (["xformers"] if xops is not None else []))
 
 time_f = {}
 time_b = {}
@@ -142,7 +141,7 @@ for causal in causal_vals:
                 time_f[config, "xformers"] = f
                 time_b[config, "xformers"] = b
 
-            print(f"### causal={causal}, headdim={headdim}, batch_size={batch_size}, seqlen={seqlen} ###")
+            print_head=f"### causal={causal}, headdim={headdim}, batch_size={batch_size}, seqlen={seqlen} ###"
             for method in methods:
                 time_f_b[config, method] = time_f[config, method] + time_b[config, method]
                 speed_f[config, method] = efficiency(
@@ -158,6 +157,7 @@ for causal in causal_vals:
                     time_f_b[config, method]
                 )
                 print(
+                    f"{print_head}"
                     f"{method} fwd: {speed_f[config, method]:.2f} TFLOPs/s, "
                     f"bwd: {speed_b[config, method]:.2f} TFLOPs/s, "
                     f"fwd + bwd: {speed_f_b[config, method]:.2f} TFLOPs/s"
